@@ -1,0 +1,109 @@
+<measure>
+  <schema_version>3.0</schema_version>
+  <name>view_daylight_results</name>
+  <uid>38962937-0bd7-480c-b39a-12d075f3f493</uid>
+  <version_id>e5fa39e9-a50a-43ed-8c2a-86523c05f452</version_id>
+  <xml_checksum>293730A7</xml_checksum>
+  <class_name>ViewDaylightResults</class_name>
+  <display_name> Daylighting Results Viewer</display_name>
+  <description>Launches an interactive viewer to permit the user to view daylighting results, by space, in pseudo color renderings that apply plan views and 8760 hour maps (24 hours x 365 days) for daylight data that has been calculated by OpenStudio's Daylight Processing Measure.  This permits the user to visually assess shading device activation algorithm performance as well as the amount of daylight delivered to a space.</description>
+  <modeler_description>Selections include (A) Annual metrics such as Daylight Autonomy, Continuous Daylight Autonomy, Useful Dayight Illuminance, and Sunlight Hours. (B) The illuminance distribution across the space at a given time, based on the weather file data, combined with an 8760-hour display of the illuminance at any selected point in that space. (C) Shade settings at all hours of the year based on the shading algorithm applied</modeler_description>
+  <arguments>
+    <argument>
+      <name>view_daylight</name>
+      <display_name>---)</display_name>
+      <type>Boolean</type>
+      <required>true</required>
+      <model_dependent>false</model_dependent>
+      <default_value>false</default_value>
+      <choices>
+        <choice>
+          <value>true</value>
+          <display_name>true</display_name>
+        </choice>
+        <choice>
+          <value>false</value>
+          <display_name>false</display_name>
+        </choice>
+      </choices>
+    </argument>
+    <argument>
+      <name>ref_point</name>
+      <display_name>Daylighting Results to View - Select One:</display_name>
+      <type>Choice</type>
+      <required>true</required>
+      <model_dependent>false</model_dependent>
+      <choices>
+        <choice>
+          <value>Annual Metrics</value>
+          <display_name>Annual Metrics</display_name>
+        </choice>
+        <choice>
+          <value>Illuminance Grid</value>
+          <display_name>Illuminance Grid</display_name>
+        </choice>
+        <choice>
+          <value>Shade Settings</value>
+          <display_name>Shade Settings</display_name>
+        </choice>
+      </choices>
+    </argument>
+  </arguments>
+  <provenances/>
+  <tags>
+    <tag>Electric Lighting.Lighting Equipment</tag>
+  </tags>
+  <attributes>
+    <attribute>
+      <name>Measure Type</name>
+      <value>ModelMeasure</value>
+      <datatype>string</datatype>
+    </attribute>
+    <attribute>
+      <name>Measure Function</name>
+      <value>Measure</value>
+      <datatype>string</datatype>
+    </attribute>
+    <attribute>
+      <name>Requires EnergyPlus Results</name>
+      <value>false</value>
+      <datatype>boolean</datatype>
+    </attribute>
+    <attribute>
+      <name>Uses SketchUp API</name>
+      <value>false</value>
+      <datatype>boolean</datatype>
+    </attribute>
+  </attributes>
+  <files>
+    <file>
+      <filename>EnvelopeAndLoadTestModel_01.osm</filename>
+      <filetype>osm</filetype>
+      <usage_type>test</usage_type>
+      <checksum>10AA8866</checksum>
+    </file>
+    <file>
+      <filename>ReplaceLightsWithLPD_01_Test.rb</filename>
+      <filetype>rb</filetype>
+      <usage_type>test</usage_type>
+      <checksum>09C52DB5</checksum>
+    </file>
+    <file>
+      <filename>EnvelopeAndLoadTestModel_01_Costed.osm</filename>
+      <filetype>osm</filetype>
+      <usage_type>test</usage_type>
+      <checksum>E025B7B3</checksum>
+    </file>
+    <file>
+      <version>
+        <software_program>OpenStudio</software_program>
+        <identifier>0.11.3</identifier>
+        <min_compatible>0.11.3</min_compatible>
+      </version>
+      <filename>measure.rb</filename>
+      <filetype>rb</filetype>
+      <usage_type>script</usage_type>
+      <checksum>5C209DD6</checksum>
+    </file>
+  </files>
+</measure>

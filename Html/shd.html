@@ -1,0 +1,726 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<!----------------------------------------------------------------------------------------------------------------------------->
+<!-- Thermal plots for Annual Shade Settings -->
+<!----------------------------------------------------------------------------------------------------------------------------->
+<!-- 
+Copyright (c) 2015, The Pennsylvania State University
+All rights reserved.
+
+Redistribution and use in source and binary forms,
+with or without modification, are permitted provided that the
+following conditions are met:
+
+1. Redistributions of source code must retain the
+    above copyright notice, this list of conditions
+    and the following disclaimer.
+
+2. Redistributions in binary form must reproduce the
+    above copyright notice, this list of conditions
+    and the following disclaimer in the documentation
+    and/or other materials provided with the distribution.
+
+3. Neither the name of the copyright holder
+    nor the names of its contributors may be used to
+    endorse or promote products derived from this software
+    without specific prior written permission of the respective copyright holder or contributor.
+
+THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS
+"AS IS" AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING,
+BUT NOT LIMITED TO, THE IMPLIED WARRANTIES OF MERCHANTABILITY,
+FITNESS FOR A PARTICULAR PURPOSE, AND NONINFRINGEMENT OF
+INTELLECTUAL PROPERTY ARE EXPRESSLY DISCLAIMED. IN NO EVENT
+SHALL THE COPYRIGHT HOLDERS OR CONTRIBUTORS BE LIABLE FOR ANY DIRECT,
+INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL
+DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF
+SUBSTITUTE GOODS OR SERVICES; LOSS OF USE, DATA, OR PROFITS; OR
+BUSINESS INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY OF
+LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT
+(INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF
+THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY
+OF SUCH DAMAGE.
+-->
+
+	<head>
+		<meta charset="utf-8">
+		<title>Shading Data</title>
+
+
+
+		<script type="text/javascript" src="//cdnjs.cloudflare.com/ajax/libs/jquery/2.0.3/jquery.min.js"></script>
+		<script type="text/javascript" src="//cdnjs.cloudflare.com/ajax/libs/d3/3.3.9/d3.min.js"></script>
+
+		<style type="text/css">
+            .axis path,
+            .axis line {
+                fill: none;
+                stroke: black;
+                shape-rendering: crispEdges;
+            }
+
+            .axis text {
+                font-family: comic-sans;
+                font-size: 10px;
+            }
+
+
+            .tooltip {
+                position: absolute;
+                width: 400px;
+                height: 28px;
+                pointer-events: none;}
+
+            .svgtooltip{
+                font-family: comic-sans;
+                font-size: 12px;
+                fill: DarkBlue;
+
+            }
+
+            .charttitle{
+                font-family: comic-sans;
+                font-size: 12px;
+                font-weight: bold;
+            }
+
+            .legend{
+                font-family: comic-sans;
+                font-size: 10px;
+
+            }
+            .overlay {
+                fill: none;
+                pointer-events: all;
+            }
+
+        </style>
+	</head>
+		<!-- Code for creating buttons for navigating between charts -->
+		<TABLE BORDER="0">
+			<TR>
+
+			<TD><FORM METHOD="LINK" ACTION="annual.html">
+			<INPUT TYPE="submit" VALUE="Annual Metrics">
+			</FORM></TD>
+
+			<TD><FORM METHOD="LINK" ACTION="ill.html">
+			<INPUT TYPE="submit" VALUE="Illuminance Chart">
+			</FORM></TD>
+
+			<TD><FORM METHOD="LINK" ACTION="shd.html">
+			<INPUT TYPE="submit" VALUE="Annual Shade Settings">
+			</FORM></TD>
+
+			</TR>
+
+	</TABLE>
+
+	<h2>Annual Shade Settings</h2>
+	
+	
+
+    <div id="area2"></div>
+    <div id="area3"></div>
+
+
+	<body>
+
+
+
+
+    <script type="text/javascript">
+
+	//Function to interpolate color values for charts.
+	function colorcalc(ci,illval){ //ci stands for color info.
+
+   var r = 0
+   var g = 0
+   var b = 0
+   var alpha = 1
+
+    switch (true){
+
+        case illval >= ci.maxabs.val: //rgb values for absolute maximum.
+
+            return "rgba("+ci.maxabs.r+","+ci.maxabs.g+","+ci.maxabs.b+","+alpha+")"
+            return d3.rgb(ci.maxabs.r,ci.maxabs.g,ci.maxabs.b)
+            break;
+
+        case (illval < ci.maxabs.val && illval >= ci.maxud.val) :
+
+            r=  ci.maxabs.r -  Math.round(((ci.maxabs.r-ci.maxud.r)/( ci.maxabs.val-ci.maxud.val))*(ci.maxabs.val-illval))
+            g= ci.maxabs.g -  Math.round(((ci.maxabs.g-ci.maxud.g)/( ci.maxabs.val-ci.maxud.val))*(ci.maxabs.val-illval))
+            b=  ci.maxabs.b -  Math.round(((ci.maxabs.b-ci.maxud.b)/( ci.maxabs.val-ci.maxud.val))*(ci.maxabs.val-illval))
+
+            return "rgba("+r+","+g+","+b+","+alpha+")"
+           // return (d3.rgb(r,g,b))
+
+            break;
+
+        case (illval < ci.maxud.val && illval >= ci.minud.val) :
+
+
+            r=  ci.maxud.r -  Math.round(((ci.maxud.r-ci.minud.r)/( ci.maxud.val-ci.minud.val))*(ci.maxud.val-illval))
+            g= ci.maxud.g -  Math.round(((ci.maxud.g-ci.minud.g)/( ci.maxud.val-ci.minud.val))*(ci.maxud.val-illval))
+            b=  ci.maxud.b -  Math.round(((ci.maxud.b-ci.minud.b)/( ci.maxud.val-ci.minud.val))*(ci.maxud.val-illval))
+
+            return "rgba("+r+","+g+","+b+","+alpha+")"
+           //return (d3.rgb(r,g,b))
+
+            break;
+
+        case (illval < ci.minud.val && illval >= ci.minabs.val) :
+
+            r=  ci.minud.r -  Math.round(((ci.minud.r-ci.minabs.r)/( ci.minud.val-ci.minabs.val))*(ci.minud.val-illval))
+            g= ci.minud.g -  Math.round(((ci.minud.g-ci.minabs.g)/( ci.minud.val-ci.minabs.val))*(ci.minud.val-illval))
+            b=  ci.minud.b -  Math.round(((ci.minud.b-ci.minabs.b)/( ci.minud.val-ci.minabs.val))*(ci.minud.val-illval))
+
+            return "rgba("+r+","+g+","+b+","+alpha+")"
+            //return (d3.rgb(r,g,b))
+
+            break;
+
+        case illval <= ci.minabs.val: //rgb values for absolute minimum.
+
+           // return d3.rgb(ci.minabs.r,ci.minabs.g,ci.minabs.b)
+            return "rgba("+ci.minabs.r+","+ci.minabs.g+","+ci.minabs.b+","+alpha+")"
+            break;
+    }
+
+}
+
+        //Functions for asynchronous loading of data using csv and json files. The data will be loaded in the form of JS objects in the future versions of this file.
+        d3.text("../data/csv/ill.csv",function(data) {
+             d3.json("../data/csv/ill.json", function(error, info) {
+
+
+        //info is the json file that contains details such as pts file data, display hour etc.
+
+                 //width and height for qt webbrowser are 881 and 761 resp. Keep width fixed but allow height to expand.
+
+
+
+                 var roomrow = info.ylen; //# of rows and columns in roomgrid (unqiue rows in the pts file)
+                 var roomcol =info.xlen;
+
+
+
+ 
+
+
+                 //Width and height for the room grid
+                 var wg = 350;
+                 var hg = 350;
+
+                 if (roomrow>roomcol){
+
+                     wg = hg*roomcol/roomrow
+                 }
+                 else
+                 {
+                     if (roomrow<roomcol){
+
+                         hg = wg*roomrow/roomcol
+                     }
+                 }
+
+
+                var colorinfo = info.colorinfo
+
+                var shdinfo = info.shdinfo
+                var shadeset = []
+
+
+ 
+
+                 var xmargin =  60;
+
+                 var ymargin = 60;
+
+                 var yearlydata = d3.csv.parseRows(data);
+
+                 var displayhour = info.displaytime
+                     displayhour = 5149
+                 var displaygrid = info.displaygrid
+
+
+                //Read display hour and display grid from the json file.
+
+
+                dataset = (yearlydata[displayhour].slice(0,(yearlydata[displayhour].length-1)))
+
+                datathermal = d3.transpose(yearlydata)[displaygrid]
+
+
+
+                //Tooltip is displayed below the svg.
+                var tooltip = d3.select("body").append("div")
+                        .attr("class", "tooltip")
+                        .style("opacity", 0);
+
+                var xcount = 0, ycount = 1;
+                var hourlogx = 1, hourlogy = 0;
+
+                var colorcount = 0;
+
+ 
+
+
+
+                 var lowlux = 200;
+                 var highlux = 2500;
+                 var minlux = 0.0;
+
+                 var midlux = lowlux + (highlux-lowlux)/2;
+
+                 var cellwidth = (wg) / (roomcol);
+                 var cellheight = hg /(roomrow);
+
+
+                 //parse time from the string containing timestamps in the json file.
+                 var timefromstring = d3.time.format("%Y-%m-%d-%H-%M");
+
+                 for (var i=0; i< info.time.length;i++)
+                 {
+
+                     info.time[i] = timefromstring.parse(info.time[i])
+
+
+                 }
+
+
+
+                 var timeformat = d3.time.format("%H:%M% hrs on %d-%b")
+
+
+                 var scalerangex = [];
+                 scalerangex.length = 1;
+
+                 var scalerangey = [];
+                 scalerangey.length = 1;
+
+                 var xticks = 0 , yticks = 0;
+
+
+
+
+                 scalerangex[0] = info.xmin;
+                 scalerangex[1] = info.xmax;
+
+                 scalerangey[1] = info.ymin;
+                 scalerangey[0] = info.ymax;
+
+
+                     xticks = 12;
+                     yticks = 12;
+
+
+
+
+                 var wt = 700
+                 var ht = 150
+                 xtmargin = 60
+                 ytmargin =30
+
+                cellwidtht = wt/365;
+                cellheight = ht/24;
+
+        //         var timeformat = d3.time.format("%H:%M% hrs on %d-%b")
+
+                 //svg2 is meant for thermal plot.
+                 var svg2 = d3.select("#area2")
+                         .append("svg")
+                         .attr({   width: (wt+xtmargin),height: (ht+2*ytmargin) }) ; //padding on the left and top and bottom.
+
+                 svg2.selectAll("rect")
+                         .data(datathermal)
+                         .enter()
+                         .append("rect")
+                         .attr({
+                             //The second argument in the anonymous function is an autonumber that begins at 0.
+                             x: function (d, ie) {
+                    //             if (displayhourly === false) //ie yearly data for a point is to be displayed.
+                                 {
+
+                                     if (ie != 0 && ie % 24 === 0) {
+                                         xcount = xcount + 1;
+                                     }
+
+                                     //   alert(d+" xvalue"+xcount*w/365+"ie value is"+ie);
+                                     return xtmargin + xcount * wt / 365;
+
+                                 }
+
+                             }, //The value of x starts at zero and then increments as multiples of (svg width)/(dataset.length)
+
+                             y: function (d, ie) {
+                               //  if (displayhourly === false) //ie yearly data for a point is to be displayed.
+                                 {
+
+                                     if (ie != 0 && ie % 24 === 0) //If the counter is a multiple of 24 then reset y to 1.
+                                     {
+                                         ycount = 1;
+                                     }
+                                     else {
+                                         if (ie != 0) {
+                                             ycount = ycount + 1;
+                                         }
+                                     }
+
+
+                                     return ytmargin + ht - ycount*ht/24;
+                                 }
+
+                             },
+                             width: cellwidtht,
+                             height: cellheight,
+                             fill: function (d,ie) {
+                                 var shadesetting = info.shdinfo[ie][0]
+                                 if (shadesetting === "0") {shadesetting = info.colorinfo.minabs.val}
+                                 if (shadesetting === "1") {shadesetting = info.colorinfo.maxud.val}
+                                 if (shadesetting === "2") {shadesetting = info.colorinfo.maxabs.val}
+                                 return colorcalc(colorinfo,shadesetting);
+                             },
+                             stroke: function (d,ie) {
+                                 var shadesetting = info.shdinfo[ie][0]
+                                 if (shadesetting === "0") {shadesetting =  info.colorinfo.minabs.val}
+                                 if (shadesetting === "1") {shadesetting = info.colorinfo.maxud.val}
+                                 if (shadesetting === "2") {shadesetting = info.colorinfo.maxabs.val}
+                                 return colorcalc(colorinfo,shadesetting);
+                             }
+
+                         })
+                         .on("mouseover", function (d,ie) {
+
+
+                             svg2.select("#tooltip2")
+                                     .attr("class","svgtooltip")
+                                     .text("Group 1: "  +info.shdinfo[ie][0]+" Group 2: " +info.shdinfo[ie][1]+" on "+timeformat(info.time[ie]))
+                                     .attr("x", xtmargin)
+                                     .attr("y", ytmargin/1.2)
+
+                         })
+                         .on("mouseout", function (d,ie) {
+                             svg2.select("#tooltip2")
+                                     .attr("class","svgtooltip")
+                                     .text("")
+                                     .attr("x", xtmargin)
+                                     .attr("y", ytmargin/1.2)
+
+                         })
+; //Attributes again specified using multivalue maps.
+
+
+
+                 var annualtitle = svg2.append("text")
+                         .attr("class","charttitle")
+                         .attr("x", xtmargin)
+                         .attr("y", ytmargin/3)
+                         .text("Annual Shade Settings for Shading Group 1")
+
+                 svg2.append("text")//Text for tooltip.
+                         .attr("id","tooltip2")
+                         .attr("x", xtmargin)
+                         .attr("y", ytmargin/1.2)
+
+
+
+
+                 var scalerangex = [];
+                 scalerangex.length = 1;
+
+                 var scalerangey = [];
+                 scalerangey.length = 1;
+
+                 var xticks = 0 , yticks = 0;
+
+
+   //             console.log(info.time[0],info.time[8759])
+
+                 scalerangex[0] = info.time[0]
+                 scalerangex[1] = info.time[8759];
+
+                 scalerangey[1] = info.time[0];
+                 scalerangey[0] = info.time[23];
+
+
+
+                 xticks = d3.time.months;
+
+
+
+
+                 //Steps for creating axes.
+
+
+
+                 //Step1 create a scale for x axis and y axis.
+                 var xt = d3.time.scale()
+                         .domain(scalerangex)
+                         .range([xtmargin, wt+xtmargin]);
+
+                 var yt = d3.time.scale()
+                         .domain(scalerangey)
+                         .range([ytmargin, ht+ytmargin ]);
+
+                 //Step2 create axes values for x axis and y axis. The values displayed by the axis in each case will be generated based on the scales defined before.
+                 var xtAxis = d3.svg.axis()
+                         .scale(xt)
+                         .orient("bottom")
+                         .ticks(xticks);
+
+                 var ytAxis = d3.svg.axis()
+                         .scale(yt)
+                         .orient("left")
+                         .tickFormat(d3.time.format("%H:%M hrs"));
+
+                 //Step3 Append the axes created in step2 to the svg that contains the charts.
+                 svg2.append("g")
+                         .attr("class", "axis")
+                         .attr("transform", "translate(0," + (ytmargin+ht) + ")")
+                         .call(xtAxis);
+
+                 svg2.append("g")
+                         .attr("class", "axis")
+                         .attr("transform", "translate("+ xtmargin+"," + 0 + ")")
+                         .call(ytAxis);
+
+
+                 //   console.log(yearlydata)
+
+
+                 xcount = 0, ycount = 1;
+                 hourlogx = 1, hourlogy = 0;
+
+                 colorcount = 0;
+
+                 var svg3 = d3.select("#area3")
+                         .append("svg")
+                         .attr({   width: (wt+xtmargin),height: (ht+2*ytmargin) }) ; //padding on the left and top and bottom.
+
+                 svg3.selectAll("rect")
+                         .data(datathermal)
+                         .enter()
+                         .append("rect")
+                         .attr({
+                             //The second argument in the anonymous function is an autonumber that begins at 0.
+                             x: function (d, ie) {
+                                 //             if (displayhourly === false) //ie yearly data for a point is to be displayed.
+                                 {
+
+                                     if (ie != 0 && ie % 24 === 0) {
+                                         xcount = xcount + 1;
+                                     }
+
+                                     //   alert(d+" xvalue"+xcount*w/365+"ie value is"+ie);
+                                     return xtmargin + xcount * wt / 365;
+
+                                 }
+
+                             }, //The value of x starts at zero and then increments as multiples of (svg width)/(dataset.length)
+
+                             y: function (d, ie) {
+                                 //  if (displayhourly === false) //ie yearly data for a point is to be displayed.
+                                 {
+
+                                     if (ie != 0 && ie % 24 === 0) //If the counter is a multiple of 24 then reset y to 1.
+                                     {
+                                         ycount = 1;
+                                     }
+                                     else {
+                                         if (ie != 0) {
+                                             ycount = ycount + 1;
+                                         }
+                                     }
+
+
+                                     return ytmargin + ht - ycount*ht/24;
+                                 }
+
+                             },
+                             width: cellwidtht,
+                             height: cellheight,
+                             fill: function (d,ie) {
+                                 var shadesetting = info.shdinfo[ie][1]
+                                 if (shadesetting === "0") {shadesetting = info.colorinfo.minabs.val}
+                                 if (shadesetting === "1") {shadesetting = info.colorinfo.maxud.val}
+                                 if (shadesetting === "2") {shadesetting = info.colorinfo.maxabs.val}
+                                 return colorcalc(colorinfo,shadesetting);
+                             },
+                             stroke: function (d,ie) {
+                                 var shadesetting = info.shdinfo[ie][1]
+                                 if (shadesetting === "0") {shadesetting =  info.colorinfo.minabs.val}
+                                 if (shadesetting === "1") {shadesetting = info.colorinfo.maxud.val}
+                                 if (shadesetting === "2") {shadesetting = info.colorinfo.maxabs.val}
+                                 return colorcalc(colorinfo,shadesetting);
+                             }
+
+                         })
+                         .on("mouseover", function (d,ie) {
+
+
+                             svg3.select("#tooltip3")
+                                     .attr("class","svgtooltip")
+                                     .text("Group 1: "  +info.shdinfo[ie][0]+" Group 2: " +info.shdinfo[ie][1]+" on "+timeformat(info.time[ie]))
+                                     .attr("x", xtmargin)
+                                     .attr("y", ytmargin/1.2)
+
+
+                         })
+                         .on("mouseout", function (d,ie) {
+                             svg3.select("#tooltip3")
+                                     .attr("class","svgtooltip")
+                                     .text("")
+                                     .attr("x", xtmargin)
+                                     .attr("y", ytmargin/1.2)
+
+                         })
+                 ; //Attributes again specified using multivalue maps.
+
+
+
+                 var annualtitle = svg3.append("text")
+                         .attr("class","charttitle")
+                         .attr("x", xtmargin)
+                         .attr("y", ytmargin/3)
+                         .text("Annual Shade Settings for Shading Group 2")
+
+                 svg3.append("text")//Text for tooltip.
+                         .attr("id","tooltip3")
+                         .attr("x", xtmargin)
+                         .attr("y", ytmargin/1.2)
+
+
+
+
+                 var scalerangex = [];
+                 scalerangex.length = 1;
+
+                 var scalerangey = [];
+                 scalerangey.length = 1;
+
+                 var xticks = 0 , yticks = 0;
+
+
+                 //             console.log(info.time[0],info.time[8759])
+
+                 scalerangex[0] = info.time[0]
+                 scalerangex[1] = info.time[8759];
+
+                 scalerangey[1] = info.time[0];
+                 scalerangey[0] = info.time[23];
+
+
+
+                 xticks = d3.time.months;
+
+
+
+
+                 //Steps for creating axes.
+
+
+
+                 //Step1 create a scale for x axis and y axis.
+                 var xt = d3.time.scale()
+                         .domain(scalerangex)
+                         .range([xtmargin, wt+xtmargin]);
+
+                 var yt = d3.time.scale()
+                         .domain(scalerangey)
+                         .range([ytmargin, ht+ytmargin ]);
+
+                 //Step2 create axes values for x axis and y axis. The values displayed by the axis in each case will be generated based on the scales defined before.
+                 var xtAxis = d3.svg.axis()
+                         .scale(xt)
+                         .orient("bottom")
+                         .ticks(xticks);
+
+                 var ytAxis = d3.svg.axis()
+                         .scale(yt)
+                         .orient("left")
+                         .tickFormat(d3.time.format("%H:%M hrs"));
+
+                 //Step3 Append the axes created in step2 to the svg that contains the charts.
+                 svg3.append("g")
+                         .attr("class", "axis")
+                         .attr("transform", "translate(0," + (ytmargin+ht) + ")")
+                         .call(xtAxis);
+
+                 svg3.append("g")
+                         .attr("class", "axis")
+                         .attr("transform", "translate("+ xtmargin+"," + 0 + ")")
+                         .call(ytAxis);
+
+						 
+				var gradientase = svg3.append("svg:defs")
+                                             .append("svg:linearGradient")
+                                             .attr("id", "gradient")
+                                             .attr("x1", "100%")
+                                             .attr("y1", "0%")
+                                             .attr("x2", "00%")
+                                             .attr("y2", "0%")
+                                             .attr("spreadMethod", "pad");
+
+// Define the gradient colors
+                                     gradientase.append("svg:stop")
+                                             .attr("offset", "0%")
+                                             .attr("stop-color", colorcalc(colorinfo,colorinfo.maxabs.val,1))
+                                             .attr("stop-opacity", 1);
+
+                                     gradientase.append("svg:stop")
+                                             .attr("offset", "33%")
+                                             .attr("stop-color", colorcalc(colorinfo,colorinfo.maxud.val,1))
+                                             .attr("stop-opacity", 1);
+
+                                     gradientase.append("svg:stop")
+                                             .attr("offset", "66%")
+                                             .attr("stop-color", colorcalc(colorinfo,colorinfo.minud.val,1))
+                                             .attr("stop-opacity", 1);
+
+                                     gradientase.append("svg:stop")
+                                             .attr("offset", "100%")
+                                             .attr("stop-color", colorcalc(colorinfo,colorinfo.minabs.val,1))
+                                             .attr("stop-opacity", 1);
+
+
+                                     svg.append('rect')
+                                             .attr('x', xmargin)
+                                             .attr('y', 1.5*ymargin+hg)
+                                             .attr('height', 10)
+                                             .attr("width",wt)
+                                             .attr('fill', 'url(#gradient)');
+
+
+
+                                     d3.select("#leg1")
+                                             .text(""+colorinfo.minabs.val+"%")
+
+
+                                     d3.select("#leg2")
+                                             .text(""+colorinfo.minud.val*100+"%")
+
+
+                                     d3.select("#leg3")
+                                             .text(""+colorinfo.maxud.val*100+"%")
+
+
+                                     d3.select("#leg4")
+                                             .text(""+colorinfo.maxabs.val*100+"%")						 
+			
+
+                 //   console.log(yearlydata)
+
+
+// Define the gradient colors
+
+
+
+            }) });
+
+
+
+    </script>
+	</body>
+</html>

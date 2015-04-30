@@ -1,0 +1,964 @@
+
+<!DOCTYPE html>
+<html lang="en">
+
+<!----------------------------------------------------------------------------------------------------------------------------->
+<!-- Thermal and Grid Plots for Annual Illuminance Data -->
+<!----------------------------------------------------------------------------------------------------------------------------->
+<!-- 
+Copyright (c) 2015, The Pennsylvania State University
+All rights reserved.
+
+Redistribution and use in source and binary forms,
+with or without modification, are permitted provided that the
+following conditions are met:
+
+1. Redistributions of source code must retain the
+    above copyright notice, this list of conditions
+    and the following disclaimer.
+
+2. Redistributions in binary form must reproduce the
+    above copyright notice, this list of conditions
+    and the following disclaimer in the documentation
+    and/or other materials provided with the distribution.
+
+3. Neither the name of the copyright holder
+    nor the names of its contributors may be used to
+    endorse or promote products derived from this software
+    without specific prior written permission of the respective copyright holder or contributor.
+
+THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS
+"AS IS" AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING,
+BUT NOT LIMITED TO, THE IMPLIED WARRANTIES OF MERCHANTABILITY,
+FITNESS FOR A PARTICULAR PURPOSE, AND NONINFRINGEMENT OF
+INTELLECTUAL PROPERTY ARE EXPRESSLY DISCLAIMED. IN NO EVENT
+SHALL THE COPYRIGHT HOLDERS OR CONTRIBUTORS BE LIABLE FOR ANY DIRECT,
+INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL
+DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF
+SUBSTITUTE GOODS OR SERVICES; LOSS OF USE, DATA, OR PROFITS; OR
+BUSINESS INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY OF
+LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT
+(INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF
+THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY
+OF SUCH DAMAGE.
+-->
+
+
+
+	<head>
+		<meta charset="utf-8">
+		<title>Illuminance Chart</title>
+
+
+
+		<script type="text/javascript" src="//cdnjs.cloudflare.com/ajax/libs/jquery/2.0.3/jquery.min.js"></script>
+		<script type="text/javascript" src="//cdnjs.cloudflare.com/ajax/libs/d3/3.3.9/d3.min.js"></script>
+		<style type="text/css">
+            .axis path,
+            .axis line {
+                fill: none;
+                stroke: black;
+                shape-rendering: crispEdges;
+            }
+
+            .axis text {
+                font-family: comic-sans;
+                font-size: 10px;
+            }
+
+
+            .tooltip {
+                position: absolute;
+                width: 400px;
+                height: 28px;
+                pointer-events: none;}
+
+            .svgtooltip{
+                font-family: comic-sans;
+                font-size: 12px;
+                fill: DarkBlue;
+
+            }
+
+            .charttitle{
+                font-family: comic-sans;
+                font-size: 12px;
+                font-weight: bold;
+            }
+
+            .legend{
+                font-family: comic-sans;
+                font-size: 10px;
+
+            }
+            .overlay {
+                fill: none;
+                pointer-events: all;
+            }
+
+        </style>
+		
+		
+	</head>
+	<!-- Code for creating buttons for navigating between charts -->
+		<TABLE BORDER="0">
+			<TR>
+
+			<TD><FORM METHOD="LINK" ACTION="annual.html">
+			<INPUT TYPE="submit" VALUE="Annual Metrics">
+			</FORM></TD>
+
+			<TD><FORM METHOD="LINK" ACTION="ill.html">
+			<INPUT TYPE="submit" VALUE="Illuminance Chart">
+			</FORM></TD>
+
+			<TD><FORM METHOD="LINK" ACTION="shd.html">
+			<INPUT TYPE="submit" VALUE="Annual Shade Settings">
+			</FORM></TD>
+
+			</TR>
+
+	</TABLE>
+	
+	<h2>Illuminance Chart</h2>
+
+    <div id="area1"></div>
+    <div id="area2"></div>
+
+	<body>
+
+
+
+
+    <script type="text/javascript">
+
+
+	//Function to interpolate color values for charts.
+	function colorcalc(ci,illval){ //ci stands for color info.
+
+   var r = 0
+   var g = 0
+   var b = 0
+   var alpha = 1
+
+    switch (true){
+
+        case illval >= ci.maxabs.val: //rgb values for absolute maximum.
+
+            return "rgba("+ci.maxabs.r+","+ci.maxabs.g+","+ci.maxabs.b+","+alpha+")"
+            return d3.rgb(ci.maxabs.r,ci.maxabs.g,ci.maxabs.b)
+            break;
+
+        case (illval < ci.maxabs.val && illval >= ci.maxud.val) :
+
+            r=  ci.maxabs.r -  Math.round(((ci.maxabs.r-ci.maxud.r)/( ci.maxabs.val-ci.maxud.val))*(ci.maxabs.val-illval))
+            g= ci.maxabs.g -  Math.round(((ci.maxabs.g-ci.maxud.g)/( ci.maxabs.val-ci.maxud.val))*(ci.maxabs.val-illval))
+            b=  ci.maxabs.b -  Math.round(((ci.maxabs.b-ci.maxud.b)/( ci.maxabs.val-ci.maxud.val))*(ci.maxabs.val-illval))
+
+            return "rgba("+r+","+g+","+b+","+alpha+")"
+           // return (d3.rgb(r,g,b))
+
+            break;
+
+        case (illval < ci.maxud.val && illval >= ci.minud.val) :
+
+
+            r=  ci.maxud.r -  Math.round(((ci.maxud.r-ci.minud.r)/( ci.maxud.val-ci.minud.val))*(ci.maxud.val-illval))
+            g= ci.maxud.g -  Math.round(((ci.maxud.g-ci.minud.g)/( ci.maxud.val-ci.minud.val))*(ci.maxud.val-illval))
+            b=  ci.maxud.b -  Math.round(((ci.maxud.b-ci.minud.b)/( ci.maxud.val-ci.minud.val))*(ci.maxud.val-illval))
+
+            return "rgba("+r+","+g+","+b+","+alpha+")"
+           //return (d3.rgb(r,g,b))
+
+            break;
+
+        case (illval < ci.minud.val && illval >= ci.minabs.val) :
+
+            r=  ci.minud.r -  Math.round(((ci.minud.r-ci.minabs.r)/( ci.minud.val-ci.minabs.val))*(ci.minud.val-illval))
+            g= ci.minud.g -  Math.round(((ci.minud.g-ci.minabs.g)/( ci.minud.val-ci.minabs.val))*(ci.minud.val-illval))
+            b=  ci.minud.b -  Math.round(((ci.minud.b-ci.minabs.b)/( ci.minud.val-ci.minabs.val))*(ci.minud.val-illval))
+
+            return "rgba("+r+","+g+","+b+","+alpha+")"
+            //return (d3.rgb(r,g,b))
+
+            break;
+
+        case illval <= ci.minabs.val: //rgb values for absolute minimum.
+
+           // return d3.rgb(ci.minabs.r,ci.minabs.g,ci.minabs.b)
+            return "rgba("+ci.minabs.r+","+ci.minabs.g+","+ci.minabs.b+","+alpha+")"
+            break;
+    }
+
+}
+ //Functions for asynchronous loading of data using csv and json files. The data will be loaded in the form of JS objects in the future versions of this file.
+        d3.text("../data/csv/ill.csv",function(data) {
+             d3.json("../data/csv/ill.json", function(error, info) {
+
+
+
+
+                 var roomrow = info.ylen;
+                 var roomcol =info.xlen;
+
+
+ 
+
+
+
+
+                 var wg = 350;
+                 var hg = 350;
+
+                 if (roomrow>roomcol){
+
+                     wg = hg*roomcol/roomrow
+                 }
+                 else
+                 {
+                     if (roomrow<roomcol){
+
+                         hg = wg*roomrow/roomcol
+                     }
+                 }
+
+
+                var colorinfo = info.colorinfo
+
+
+
+
+                 var xmargin =  60;
+
+                 var ymargin = 60;
+
+
+                 var svg = d3.select("#area1")
+                         .append("svg")
+                         .attr({   width: (880),height: (hg+2*ymargin) }) ;
+
+
+
+
+                 var yearlydata = d3.csv.parseRows(data);
+
+                 var displayhour = info.displaytime
+
+                 var displaygrid = info.displaygrid
+
+
+
+
+
+
+
+
+                dataset = (yearlydata[displayhour].slice(0,(yearlydata[displayhour].length-1)))
+
+                datathermal = d3.transpose(yearlydata)[displaygrid]
+
+
+
+
+                var tooltip = d3.select("body").append("div")
+                        .attr("class", "tooltip")
+                        .style("opacity", 0);
+
+                var xcount = 0, ycount = 1;
+                var hourlogx = 1, hourlogy = 0;
+
+                var colorcount = 0;
+
+
+
+                 var xloc = d3.scale.linear()
+
+                         .domain([info.radinfo.xcormin,info.radinfo.xcormax])
+
+                         .range([0, wg-wg/info.xlen]);
+                 var yloc = d3.scale.linear()
+
+                         .domain([info.radinfo.ycormin,info.radinfo.ycormax])
+
+                         .range([0, hg-hg/info.ylen]);
+
+                 var xradloc = d3.scale.linear()
+
+                       .domain([info.radinfo.xcormin,info.radinfo.xcormax])
+                         .range([0, wg-wg/info.xlen]);
+                 var yradloc = d3.scale.linear()
+
+                     .domain([info.radinfo.ycormin,info.radinfo.ycormax])
+                         .range([0, hg-hg/info.ylen]);
+
+
+ 
+
+                 var pathval = svg.append("g")
+
+                 var line = d3.svg.line()
+                         .x(function(d) {
+                             return xmargin+xloc(d.x)
+                         })
+                         .y(function(d){return ymargin+hg-yloc(d.y)})
+
+                 svg.append("clipPath")
+                         .attr("id", "chart-area")
+                         .selectAll("path")
+                         .data([info.radinfo.radpoly])
+                         .enter()
+                         .append("path")
+                         .attr("d",line)
+
+
+                 var lowlux = 200;
+                 var highlux = 2500;
+                 var minlux = 0.0;
+
+                 var midlux = lowlux + (highlux-lowlux)/2;
+
+                 var cellwidth = (wg) / (roomcol);
+                 var cellheight = hg /(roomrow);
+
+ 
+
+
+                svg.append("g")
+
+                        .selectAll("rect")
+                        .data(dataset)
+                        .enter()
+                        .append("rect")
+                        .attr({
+
+                            x: function (d, i) {
+
+
+                                    return (xmargin+xradloc(info.xcor[i]))
+
+                            },
+
+                            y: function (d, i) {
+
+
+                                return (ymargin+hg-(yradloc(info.ycor[i])+hg/info.ylen))
+                        },
+
+                            width: cellwidth,
+                            height: cellheight,
+
+
+                            fill: function (d) {
+
+                                return colorcalc(colorinfo,d);
+                            },
+                            stroke: function (d) {
+
+                                return colorcalc(colorinfo,d);
+                            }
+
+                        })
+                        .on("mouseover", function (d,ie) {
+
+
+
+                            svg.select("#tooltip")
+                                    .attr("x", xmargin)
+                                    .attr("y", ymargin/1.2)
+                                    .attr("class","svgtooltip")
+                                    .text( d  + " lux at (x:" + info.xcor[ie]+" , y:"+info.ycor[ie]+")")
+
+
+
+                        })
+                        .on("mouseout", function (d,ie) {
+
+
+                            svg.select("#tooltip")
+                                    .attr("x", xmargin)
+                                    .attr("y", ymargin/1.2)
+                                    .attr("class","svgtooltip")
+                                    .text( "")
+                        })
+                        .on("click", function (d,ie) {
+
+                            datathermal = d3.transpose(yearlydata)[ie]
+                            displaygrid = ie
+                            xcount = 0;
+                            ycount = 1;
+
+
+
+
+                            svg2.select("text").text("Annual Illuminance plot for (" + info.xcor[ie]+", "+info.ycor[ie]+")")
+
+                            svg2.selectAll("rect")
+                                    .data(datathermal)
+                                    .transition()
+                                    .duration(1000)
+                                    .attr({
+
+                                        x: function (d, ie) {
+
+                                            {
+
+                                                if (ie != 0 && ie % 24 === 0) {
+                                                    xcount = xcount + 1;
+                                                }
+
+
+                                                return xtmargin + xcount * wt / 365;
+
+                                            }
+
+                                        },
+
+                                        y: function (d, ie) {
+
+                                            {
+
+                                                if (ie != 0 && ie % 24 === 0)
+                                                {
+                                                    ycount = 1;
+                                                }
+                                                else {
+                                                    if (ie != 0) {
+                                                        ycount = ycount + 1;
+                                                    }
+                                                }
+
+
+                                                return ytmargin + ht - ycount*ht/24;
+                                            }
+
+                                        },
+                                        width: cellwidtht,
+                                        height: cellheightt,
+                                        fill: function (d) {
+
+                                            return colorcalc(colorinfo,d);
+                                        },
+                                        stroke: function (d) {
+
+                                            return colorcalc(colorinfo,d);
+                                        }
+
+                                    })
+                        });
+
+
+
+
+
+
+
+
+
+
+                 var timefromstring = d3.time.format("%Y-%m-%d-%H-%M");
+
+                 for(var i=0; i< info.time.length;i++){
+
+                     info.time[i] = timefromstring.parse(info.time[i])
+
+
+                 }
+
+
+
+                 var timeformat = d3.time.format("%H:%M% hrs on %d-%b")
+
+
+
+                 svg.append("text")
+                         .attr("x", xmargin)
+                         .attr("y", ymargin/2)
+                         .attr("class","charttitle")
+                         .text("Workplane Illuminance Grid at " + timeformat(info.time[displayhour]))
+
+
+                 svg.append("text")
+                         .attr("id","tooltip")
+                         .attr("x", xmargin)
+                         .attr("y", ymargin)
+
+
+
+
+                 var scalerangex = [];
+                 scalerangex.length = 1;
+
+                 var scalerangey = [];
+                 scalerangey.length = 1;
+
+                 var xticks = 0 , yticks = 0;
+
+
+
+
+                 scalerangex[0] = info.xmin;
+                 scalerangex[1] = info.xmax;
+
+                 scalerangey[1] = info.ymin;
+                 scalerangey[0] = info.ymax;
+
+
+                     xticks = 12;
+                     yticks = 12;
+
+
+                     var x = d3.scale.linear()
+                             .domain(scalerangex)
+                             .range([xmargin, wg + xmargin]);
+
+                     var y = d3.scale.linear()
+                             .domain(scalerangey)
+                             .range([ymargin, hg+ymargin ]);
+
+
+                     var xAxis = d3.svg.axis()
+                             .scale(x)
+                             .orient("bottom")
+                             .ticks(xticks);
+
+                     var yAxis = d3.svg.axis()
+                             .scale(y)
+                             .orient("left")
+                             .ticks(yticks);
+
+
+                     svg.append("g")
+                             .attr("class", "axis")
+                             .attr("transform", "translate(0," + (hg+ymargin) + ")")
+                             .call(xAxis);
+
+                     svg.append("g")
+                             .attr("class", "axis")
+                             .attr("transform", "translate(" + xmargin + "," + 0 + ")")
+                             .call(yAxis);
+
+
+
+
+
+                 var currentObject = null;
+                 var prevkey = null;
+                 var timemultiplier = 1;
+
+
+                 d3.select("body")
+                         .on("keydown", function() {
+
+
+                             if (prevkey != null)
+                             {
+
+                                 if (d3.event.keyCode === 39){
+                                     var oldtime = displayhour;
+                                     if(prevkey ===87){displayhour = displayhour +168*timemultiplier};
+                                     if(prevkey ===68){displayhour = displayhour +24*timemultiplier};
+                                     if(prevkey ===72){displayhour = displayhour +1*timemultiplier};
+
+                                     if (displayhour>8759){displayhour = oldtime}
+
+                                     dataset = (yearlydata[displayhour].slice(0,(yearlydata[displayhour].length-1)))
+
+
+                                     svg.select("text").text("Workplane Illuminance Grid at " + timeformat(info.time[displayhour]))
+
+                                     svg.selectAll("rect")
+                                             .data(dataset)
+                                             .transition()
+                                             .duration(1000)
+                                             .attr({
+
+                                                 x: function (d, i) {
+
+
+                                                     return (xmargin+xloc(info.xcor[i]))
+
+                                                 },
+
+                                                 y: function (d, i) {
+
+
+                                                     return (ymargin+hg-(yloc(info.ycor[i])+hg/info.ylen))
+                                                 },
+
+                                                 width: cellwidth,
+                                                 height: cellheight,
+
+
+                                                 fill: function (d) {
+
+                                                     return colorcalc(colorinfo,d);
+                                                 },
+                                                 stroke: function (d) {
+
+                                                     return colorcalc(colorinfo,d);
+                                                 }
+
+                                             })
+                                 }
+
+                                 if (d3.event.keyCode === 37){
+
+                                     var oldtime = displayhour;
+                                     if(prevkey ===87){displayhour = displayhour -168*timemultiplier}; //For week button
+                                     if(prevkey ===68){displayhour = displayhour -24*timemultiplier}; //For day button
+                                     if(prevkey ===72){displayhour = displayhour -1*timemultiplier}; //For day button
+
+                                     if (displayhour<0){displayhour = oldtime}
+
+                                     dataset = (yearlydata[displayhour].slice(0,(yearlydata[displayhour].length-1)))
+
+                                     svg.select("text").text("Workplane Illuminance Grid at " + timeformat(info.time[displayhour]))
+                                     svg.selectAll("rect")
+                                             .data(dataset)
+                                             .transition()
+                                             .duration(1000)
+                                             .attr({
+
+                                                 x: function (d, i) {
+
+
+                                                     return (xmargin+xloc(info.xcor[i]))
+
+                                                 },
+
+                                                 y: function (d, i) {
+
+
+                                                     return (ymargin+hg-(yloc(info.ycor[i])+hg/info.ylen))
+                                                 },
+
+                                                 width: cellwidth,
+                                                 height: cellheight,
+
+
+                                                 fill: function (d) {
+
+                                                     return colorcalc(colorinfo,d);
+                                                 },
+                                                 stroke: function (d) {
+
+                                                     return colorcalc(colorinfo,d);
+                                                 }
+
+                                             })
+                                 }
+
+                             }
+
+
+
+                             if (d3.event.keyCode === 87||d3.event.keyCode === 68||d3.event.keyCode === 72){
+
+                                 prevkey = d3.event.keyCode
+                                 timemultiplier = 1
+                             }
+                             else
+                             {
+                                 if(d3.event.keyCode != 37 && d3.event.keyCode != 39 &&(d3.event.keyCode< 49 && d3.event.keyCode > 57)&& (d3.event.keyCode < 97 && d3.event.keyCode > 105) ){
+                                     prevkey = null
+                                 }
+                             }
+
+
+                            if ((d3.event.keyCode>=49 && d3.event.keyCode<=57)&& (prevkey != null))
+                            {
+                                  timemultiplier = d3.event.keyCode - 48
+                            }
+
+                             if ((d3.event.keyCode>=97 && d3.event.keyCode<=105)&& (prevkey != null))
+                             {
+                                 timemultiplier = d3.event.keyCode - 96
+                             }
+
+
+
+                         });
+
+
+
+
+
+
+
+
+                 var wt = 700
+                 var ht = 150
+                 xtmargin = 60
+                 ytmargin =30
+
+                cellwidtht = wt/365;
+                cellheightt = ht/24;
+
+
+
+
+                 var svg2 = d3.select("#area2")
+                         .append("svg")
+                         .attr({   width: (wt+xtmargin),height: (ht+2*ytmargin) }) ;
+
+                 svg2.selectAll("rect")
+                         .data(datathermal)
+                         .enter()
+                         .append("rect")
+                         .attr({
+
+                             x: function (d, ie) {
+
+                                 {
+
+                                     if (ie != 0 && ie % 24 === 0) {
+                                         xcount = xcount + 1;
+                                     }
+
+
+                                     return xtmargin + xcount * wt / 365;
+
+                                 }
+
+                             },
+
+                             y: function (d, ie) {
+
+                                 {
+
+                                     if (ie != 0 && ie % 24 === 0)
+                                     {
+                                         ycount = 1;
+                                     }
+                                     else {
+                                         if (ie != 0) {
+                                             ycount = ycount + 1;
+                                         }
+                                     }
+
+
+                                     return ytmargin + ht - ycount*ht/24;
+                                 }
+
+                             },
+                             width: cellwidtht,
+                             height: cellheightt,
+                             fill: function (d) {
+
+                                 return colorcalc(colorinfo,d);
+                             },
+                             stroke: function (d) {
+
+                                 return colorcalc(colorinfo,d);
+                             }
+
+                         })
+                         .on("mouseover", function (d,ie) {
+
+
+                             svg2.select("#tooltip2")
+                                     .attr("class","svgtooltip")
+                                     .text( d  + " lux on "+timeformat(info.time[ie]))
+                                     .attr("x", xtmargin)
+                                     .attr("y", ytmargin/1.2)
+
+                         })
+                         .on("mouseout", function (d,ie) {
+                             svg2.select("#tooltip2")
+                                     .attr("class","svgtooltip")
+                                     .text("")
+                                     .attr("x", xtmargin)
+                                     .attr("y", ytmargin/1.2)
+
+                         })
+                         .on("click", function (d,ie){
+                             dataset = (yearlydata[ie].slice(0,(yearlydata[ie].length-1)))
+                             displayhour = ie
+
+                             svg.select("text").text("Workplane Illuminance Grid at " + timeformat(info.time[ie]))
+
+                             svg.selectAll("rect")
+                                     .data(dataset)
+                                     .transition()
+                                     .duration(1000)
+                                     .attr({
+
+                                         x: function (d, i) {
+
+
+                                             return (xmargin+xloc(info.xcor[i]))
+
+                                         },
+
+                                         y: function (d, i) {
+
+                                             return (ymargin+hg-(yloc(info.ycor[i])+hg/info.ylen))
+                                         },
+
+                                         width: cellwidth,
+                                         height: cellheight,
+
+
+                                         fill: function (d) {
+
+                                             return colorcalc(colorinfo,d);
+                                         },
+                                         stroke: function (d) {
+
+                                             return colorcalc(colorinfo,d);
+                                         }
+
+                                     })
+
+                         });
+
+
+
+                 var annualtitle = svg2.append("text")
+                         .attr("class","charttitle")
+                         .attr("x", xtmargin)
+                         .attr("y", ytmargin/3)
+                         .text("Annual Illuminance plot for (" + info.xcor[displaygrid]+", "+info.ycor[displaygrid]+")")
+
+                 svg2.append("text")
+                         .attr("id","tooltip2")
+                         .attr("x", xtmargin)
+                         .attr("y", ytmargin/1.2)
+
+
+
+
+                 var scalerangex = [];
+                 scalerangex.length = 1;
+
+                 var scalerangey = [];
+                 scalerangey.length = 1;
+
+                 var xticks = 0 , yticks = 0;
+
+
+
+
+                 scalerangex[0] = info.time[0]
+                 scalerangex[1] = info.time[8759];
+
+                 scalerangey[1] = info.time[0];
+                 scalerangey[0] = info.time[23];
+
+
+
+                 xticks = d3.time.months;
+
+
+
+
+
+
+
+
+
+                 var xt = d3.time.scale()
+                         .domain(scalerangex)
+                         .range([xtmargin, wt+xtmargin]);
+
+                 var yt = d3.time.scale()
+                         .domain(scalerangey)
+                         .range([ytmargin, ht+ytmargin ]);
+
+
+                 var xtAxis = d3.svg.axis()
+                         .scale(xt)
+                         .orient("bottom")
+                         .ticks(xticks);
+
+                 var ytAxis = d3.svg.axis()
+                         .scale(yt)
+                         .orient("left")
+                         .tickFormat(d3.time.format("%H:%M hrs"));
+
+
+                 svg2.append("g")
+                         .attr("class", "axis")
+                         .attr("transform", "translate(0," + (ytmargin+ht) + ")")
+                         .call(xtAxis);
+
+                 svg2.append("g")
+                         .attr("class", "axis")
+                         .attr("transform", "translate("+ xtmargin+"," + 0 + ")")
+                         .call(ytAxis);
+
+ 
+
+                 var gradient = svg.append("svg:defs")
+                         .append("svg:linearGradient")
+                         .attr("id", "gradient")
+                         .attr("x1", "100%")
+                         .attr("y1", "0%")
+                         .attr("x2", "0%")
+                         .attr("y2", "0%")
+                         .attr("spreadMethod", "pad");
+
+
+                 gradient.append("svg:stop")
+                         .attr("offset", "0%")
+                         .attr("stop-color", colorcalc(colorinfo,colorinfo.maxabs.val))
+                         .attr("stop-opacity", 1);
+
+                 gradient.append("svg:stop")
+                         .attr("offset", "50%")
+                         .attr("stop-color", colorcalc(colorinfo,colorinfo.maxud.val))
+                         .attr("stop-opacity", 1);
+
+                 gradient.append("svg:stop")
+                         .attr("offset", "75%")
+                         .attr("stop-color", colorcalc(colorinfo,colorinfo.minud.val))
+                         .attr("stop-opacity", 1);
+
+                 gradient.append("svg:stop")
+                         .attr("offset", "100%")
+                         .attr("stop-color", colorcalc(colorinfo,colorinfo.minabs.val))
+                         .attr("stop-opacity", 1);
+
+
+                 var legend = svg.append('rect')
+                         .attr('x', xmargin)
+                         .attr('y', 1.5*ymargin+hg)
+                         .attr('height', 10)
+                         .attr("width",wt)
+                         .attr('fill', 'url(#gradient)');
+
+                 padding = 5
+
+
+                 var legendy = 1.5*ymargin+hg+20
+
+                 var legend = svg.append("text")
+                         .attr("x",xmargin*0.9)
+                         .attr("y",legendy)
+                         .text(""+colorinfo.minabs.val)
+                         .attr("class","legend")
+
+                 var legend2=svg.append("text")
+                         .attr("x",xmargin*0.9+wt*colorinfo.minud.val/(colorinfo.maxabs.val-colorinfo.minabs.val))
+                         .attr("y",legendy)
+                         .text(""+colorinfo.minud.val)
+                         .attr("class","legend")
+
+                 var legend3=svg.append("text")
+                         .attr("x",xmargin*0.9+wt*colorinfo.maxud.val/(colorinfo.maxabs.val-colorinfo.minabs.val))
+                         .attr("y",legendy)
+                         .text(""+colorinfo.maxud.val)
+                         .attr("class","legend")
+
+                 var legend4=svg.append("text")
+                         .attr("x",xmargin*0.9+wt)
+                         .attr("y",legendy)
+                         .text(""+colorinfo.maxabs.val)
+                         .attr("class","legend")
+            }) });
+
+
+
+    </script>
+	</body>
+</html>
